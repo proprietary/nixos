@@ -7,7 +7,7 @@
 {
   imports =
     [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
+      /etc/nixos/hardware-configuration.nix
     ];
 
   # Use the GRUB 2 boot loader.
@@ -48,6 +48,7 @@
     python3 zsh curl wget emacs tmux git
     gcc autoconf gnumake automake
     ungoogled-chromium
+	tor torsocks
     virtualbox
     vim
   ];
@@ -90,6 +91,11 @@
   # Enable the KDE Desktop Environment.
   services.xserver.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
+
+	# Enable tor proxy
+	services.tor.enable = true;
+	services.tor.client.enable = true;
+	services.tor.torsocks.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.zds = {
