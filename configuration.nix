@@ -58,6 +58,7 @@
 	htop neofetch
 	# Applications
     ungoogled-chromium
+	tor torsocks
     virtualbox
   ];
 
