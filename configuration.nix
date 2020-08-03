@@ -7,7 +7,7 @@
 {
   imports =
     [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
+      /etc/nixos/hardware-configuration.nix
     ];
 
   # Use the GRUB 2 boot loader.
@@ -45,11 +45,20 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+	# Development
     python3 zsh curl wget emacs tmux git
-    gcc autoconf gnumake automake
+    vim gcc autoconf gnumake automake
+	cmake ruby chez guile jq
+	docker minikube skaffold kustomize
+	# Filesystem
+	zstd
+	# Network
+	tor torsocks dnsutils whois
+	# System Administration
+	htop neofetch
+	# Applications
     ungoogled-chromium
     virtualbox
-    vim
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -90,6 +99,11 @@
   # Enable the KDE Desktop Environment.
   services.xserver.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
+
+	# Enable tor proxy
+	services.tor.enable = true;
+	services.tor.client.enable = true;
+	services.tor.torsocks.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.zds = {
