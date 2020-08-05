@@ -4,29 +4,32 @@
 
 { config, pkgs, ... }:
 
+let
+  unstableTarball =
+    fetchTarball
+      https://github.com/NixOS/nixpkgs-channels/archive/nixos-unstable.tar.gz;
+in
 {
   imports =
     [ # Include the results of the hardware scan.
-      /etc/nixos/hardware-configuration.nix
+      ./hardware-configuration.nix
     ];
 
-  # Use the GRUB 2 boot loader.
-  boot.loader.grub.enable = true;
-  boot.loader.grub.version = 2;
-  # boot.loader.grub.efiSupport = true;
-  # boot.loader.grub.efiInstallAsRemovable = true;
-  # boot.loader.efi.efiSysMountPoint = "/boot/efi";
-  # Define on which hard drive you want to install Grub.
-  boot.loader.grub.device = "/dev/sda"; # or "nodev" for efi only
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "nixos"; # Define your hostname.
+  networking.networkmanager.enable = true;
+  networking.hostName = "yerbamate"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
   # Per-interface useDHCP will be mandatory in the future, so this generated config
   # replicates the default behaviour.
   networking.useDHCP = false;
-  networking.interfaces.enp0s3.useDHCP = true;
+  networking.interfaces.enp3s0f0.useDHCP = true;
+  networking.interfaces.enp4s0.useDHCP = true;
+  networking.interfaces.wlp1s0.useDHCP = true;
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -42,25 +45,51 @@
   # Set your time zone.
   time.timeZone = "America/Los_Angeles";
 
+  # Use the unstable channel
+  nixpkgs.config = {
+    packageOverrides = pkgs: {
+      unstable = import unstableTarball {
+        config = config.nixpkgs.config;
+      };
+    };
+  };
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-	# Development
-    python3 zsh curl wget emacs tmux git
-    vim gcc autoconf gnumake automake
-	cmake ruby chez guile jq
-	docker minikube skaffold kustomize
-	# Filesystem
-	zstd
-	# Network
-	tor torsocks dnsutils whois
-	# System Administration
-	htop neofetch
-	# Applications
-    ungoogled-chromium
-	tor torsocks
-    virtualbox
+  	# Development
+	emacs tmux git vim
+	# C++
+    	gcc10 clang_10 clang-tools
+	bazel autoconf gnumake automake cmake
+	bear valgrind cppcheck
+	# Scripting languages
+        python3 ruby chez guile
+	# Rust
+	#rustc cargo
+	# Containers
+        #docker minikube skaffold kustomize
+        # Filesystem
+        zstd unzip zip
+        # Network
+        tor torsocks dnsutils whois
+        # System Administration
+    	zsh curl wget
+	lm_sensors
+        htop neofetch jq
+	direnv
+     	# Applications
+    	unstable.ungoogled-chromium
+    	virtualbox qemu mpv
+	# Utilities
+	xclip
   ];
+
+  # Virtualization
+  virtualisation.docker.enable = true;
+
+  # Enable Virtualbox guest additions
+  virtualisation.virtualbox.guest.enable = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -68,13 +97,13 @@
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
-    pinentryFlavor = "gnome3";
+    pinentryFlavor = "qt";
   };
 
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
+  services.openssh.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
@@ -83,7 +112,7 @@
   # networking.firewall.enable = false;
 
   # Enable CUPS to print documents.
-  # services.printing.enable = true;
+  services.printing.enable = true;
 
   # Enable sound.
   sound.enable = true;
@@ -94,17 +123,22 @@
   services.xserver.layout = "us";
   # services.xserver.xkbOptions = "eurosign:e";
 
+  # GPU
+  services.xserver.videoDrivers = [ "amdgpu" ];
+
   # Enable touchpad support.
-  # services.xserver.libinput.enable = true;
+  services.xserver.libinput.enable = true;
 
   # Enable the KDE Desktop Environment.
   services.xserver.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
+  # Enable StumpWM window manager
+  services.xserver.windowManager.stumpwm.enable = true;
 
-	# Enable tor proxy
-	services.tor.enable = true;
-	services.tor.client.enable = true;
-	services.tor.torsocks.enable = true;
+  # Fonts
+  fonts.fonts = with pkgs; [
+    noto-fonts noto-fonts-emoji go-font
+  ];
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.zds = {
@@ -112,9 +146,6 @@
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
     shell = pkgs.zsh;
   };
-
-  # Enable Virtualbox guest additions
-  virtualisation.virtualbox.guest.enable = true;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
@@ -125,4 +156,3 @@
   system.stateVersion = "20.03"; # Did you read the comment?
 
 }
-
