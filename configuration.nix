@@ -14,14 +14,18 @@ in
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
     ];
+  
+  # sorry rms
+  nixpkgs.config.allowUnfree = true;
+  hardware.enableAllFirmware = true;
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.networkmanager.enable = true;
-  networking.hostName = "yerbamate"; # Define your hostname.
+  networking.hostName = "coca"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  networking.networkmanager.enable = true;
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
   # Per-interface useDHCP will be mandatory in the future, so this generated config
@@ -37,15 +41,15 @@ in
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
-  # console = {
-  #   font = "Lat2-Terminus16";
-  #   keyMap = "us";
-  # };
+  console = {
+    font = "Lat2-Terminus16";
+    keyMap = "us";
+  };
 
   # Set your time zone.
   time.timeZone = "America/Los_Angeles";
 
-  # Use the unstable channel
+  # use unstable channel with alias 'unstable' alongside stable channel (take that, Debian)
   nixpkgs.config = {
     packageOverrides = pkgs: {
       unstable = import unstableTarball {
@@ -57,39 +61,35 @@ in
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  	# Development
-	emacs tmux git vim
-	# C++
-    	gcc10 clang_10 clang-tools
-	bazel autoconf gnumake automake cmake
-	bear valgrind cppcheck
-	# Scripting languages
-        python3 ruby chez guile
-	# Rust
-	#rustc cargo
-	# Containers
-        #docker minikube skaffold kustomize
-        # Filesystem
-        zstd unzip zip
-        # Network
-        tor torsocks dnsutils whois
-        # System Administration
-    	zsh curl wget
-	lm_sensors
-        htop neofetch jq
-	direnv
-     	# Applications
-    	unstable.ungoogled-chromium
-    	virtualbox qemu mpv
-	# Utilities
-	xclip
+    wget curl vim tmux git git-lfs
+    texinfo glibcInfo man-pages
+    gcc10 clang_10 clang-tools llvm_10
+    gnumake automake autoconf flex bison cmake bear valgrind cppcheck
+    unstable.bazel
+    unstable.jdk14
+    python38Full
+    ruby
+    go
+    sbcl lispPackages.quicklisp
+    zstd zip unzip
+    tor torsocks dnsutils whois wireguard
+    zsh
+    htop neofetch lm_sensors
+    direnv xclip jq
+    unstable.ungoogled-chromium
+    mpv
+    virtualbox qemu docker
   ];
 
   # Virtualization
   virtualisation.docker.enable = true;
-
-  # Enable Virtualbox guest additions
   virtualisation.virtualbox.guest.enable = true;
+
+  # Tor
+  services.tor = {
+    enable = true;
+    client.enable = true;
+  };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -107,9 +107,9 @@ in
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
+  # networking.firewall.allowedUDPPorts = [ 51820 ];
   # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
+  networking.firewall.enable = false;
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
@@ -122,9 +122,21 @@ in
   services.xserver.enable = true;
   services.xserver.layout = "us";
   # services.xserver.xkbOptions = "eurosign:e";
-
-  # GPU
   services.xserver.videoDrivers = [ "amdgpu" ];
+  fonts = {
+    enableFontDir = true;
+    fontconfig = {
+      defaultFonts = {
+        emoji = [ "Noto Color Emoji" ];
+        monospace = [ "IBM Plex Mono" ];
+        sansSerif = [ "IBM Plex Sans" ];
+        serif = [ "IBM Plex Serif" ];
+      };
+    };
+    fonts = with pkgs; [
+     terminus_font  noto-fonts noto-fonts-emoji go-font ibm-plex liberation_ttf
+    ];
+  };
 
   # Enable touchpad support.
   services.xserver.libinput.enable = true;
@@ -132,18 +144,11 @@ in
   # Enable the KDE Desktop Environment.
   services.xserver.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
-  # Enable StumpWM window manager
-  services.xserver.windowManager.stumpwm.enable = true;
-
-  # Fonts
-  fonts.fonts = with pkgs; [
-    noto-fonts noto-fonts-emoji go-font
-  ];
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.zds = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "networkmanager" ]; # Enable ‘sudo’ for the user.
     shell = pkgs.zsh;
   };
 
@@ -156,3 +161,4 @@ in
   system.stateVersion = "20.03"; # Did you read the comment?
 
 }
+
